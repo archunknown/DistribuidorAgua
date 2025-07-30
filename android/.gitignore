@@ -1,0 +1,36 @@
+gradle-wrapper.jar
+/.gradle
+/captures/
+/gradlew
+/gradlew.bat
+/local.properties
+GeneratedPluginRegistrant.java
+.cxx/
+
+# Remember to never publicly share your keystore.
+# See https://flutter.dev/to/reference-keystore
+key.properties
+**/*.keystore
+**/*.jks
+
+# Flutter/Dart related
+.dart_tool/
+.packages
+build/
+.pub-cache/
+.flutter-plugins
+.flutter-plugins-dependencies
+.melos_tool/
+.idea/
+.vscode/
+
+# Sensitive files
+.env
+*.iml
+
+# Android
+android/local.properties
+
+# iOS
+ios/Pods/
+ios/Flutter/Generated.xcconfig
