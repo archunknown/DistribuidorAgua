@@ -5,41 +5,50 @@
 *.swp
 .DS_Store
 .atom/
-.build/
 .buildlog/
 .history
 .svn/
 .swiftpm/
 migrate_working_dir/
 
-# IntelliJ related
-*.iml
-*.ipr
-*.iws
-.idea/
-
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
+# Flutter/Dart
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
 /build/
+.packages
+.melos_tool/
 
-# Symbolication related
-app.*.symbols
+# Firebase
+firebase_options.dart
+google-services.json
+firebase.json
 
-# Obfuscation related
+# IntelliJ / Android Studio
+.idea/
+*.iml
+
+# VS Code (opcional, si no deseas compartir configuraciones del editor)
+.vscode/
+
+# Platforms (opcional si no usas todas)
+macos/
+windows/
+linux/
+web/
+
+# iOS
+ios/Pods/
+ios/Flutter/Generated.xcconfig
+
+# Android
+android/local.properties
+android/key.properties
+android/google-services.json
+android/firebase_options.dart
+
+# Obfuscation / Symbols
 app.*.map.json
-
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+app.*.symbols
