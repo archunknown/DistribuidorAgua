@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:provider/provider.dart';
 import 'firebase_options.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-
+import 'constants/app_colors.dart';
+import 'constants/app_dimensions.dart';
+import 'viewmodels/login_viewmodel.dart';
+import 'views/login_view.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,70 +21,242 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Distribuidor de Agua',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const MyHomePage(title: 'Distribuidor de Agua Home'),
+    return ScreenUtilInit(
+      designSize: const Size(375, 812), // iPhone X design size
+      minTextAdapt: true,
+      splitScreenMode: true,
+      builder: (context, child) {
+        return MultiProvider(
+          providers: [
+            ChangeNotifierProvider(create: (_) => LoginViewModel()),
+          ],
+          child: MaterialApp(
+            title: 'Distribuidor de Agua',
+            debugShowCheckedModeBanner: false,
+            theme: _buildTheme(),
+            home: const LoginView(),
+          ),
+        );
+      },
     );
   }
-}
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-  final _db = FirebaseFirestore.instance; // Recuerda importar cloud_firestore
-
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _testFirestore();
-  }
-
-  Future<void> _testFirestore() async {
-    await _db.collection('prueba').doc('ping').set({'mensaje': '¡Funciona!'});
-    final snapshot = await _db.collection('prueba').doc('ping').get();
-    debugPrint(snapshot.data()?.toString());
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
+  ThemeData _buildTheme() {
+    return ThemeData(
+      // Paleta de colores personalizada usando nuestras constantes
+      primarySwatch: Colors.blue,
+      primaryColor: AppColors.mediumBlue,
+      colorScheme: const ColorScheme.light(
+        primary: AppColors.mediumBlue,
+        secondary: AppColors.lightBlue,
+        surface: AppColors.white,
+        background: AppColors.darkNavy,
+        onPrimary: AppColors.white,
+        onSecondary: AppColors.white,
+        onSurface: AppColors.darkBrown,
+        onBackground: AppColors.white,
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
+      
+      // Configuración de AppBar
+      appBarTheme: AppBarTheme(
+        backgroundColor: AppColors.darkNavy,
+        foregroundColor: AppColors.white,
+        elevation: 0,
+        titleTextStyle: TextStyle(
+          fontSize: AppDimensions.textXl,
+          fontWeight: FontWeight.bold,
+          color: AppColors.white,
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
+      
+      // Configuración de botones elevados
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.lightBlue,
+          foregroundColor: AppColors.white,
+          disabledBackgroundColor: AppColors.lightBlue.withOpacity(0.5),
+          disabledForegroundColor: AppColors.white.withOpacity(0.7),
+          elevation: AppDimensions.elevationMd,
+          shadowColor: AppColors.blackWithOpacity(0.2),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+          ),
+          padding: EdgeInsets.symmetric(
+            horizontal: AppDimensions.paddingLg,
+            vertical: AppDimensions.paddingMd,
+          ),
+          textStyle: TextStyle(
+            fontSize: AppDimensions.textLg,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      
+      // Configuración de botones outlined
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.lightBlue,
+          disabledForegroundColor: AppColors.lightBlue.withOpacity(0.5),
+          side: BorderSide(
+            color: AppColors.lightBlue,
+            width: 2.w,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+          ),
+          padding: EdgeInsets.symmetric(
+            horizontal: AppDimensions.paddingLg,
+            vertical: AppDimensions.paddingMd,
+          ),
+          textStyle: TextStyle(
+            fontSize: AppDimensions.textLg,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      
+      // Configuración de botones de texto
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.lightBlue,
+          disabledForegroundColor: AppColors.lightBlue.withOpacity(0.5),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+          ),
+          padding: EdgeInsets.symmetric(
+            horizontal: AppDimensions.paddingMd,
+            vertical: AppDimensions.paddingSm,
+          ),
+          textStyle: TextStyle(
+            fontSize: AppDimensions.textMd,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+      
+      // Configuración de campos de texto
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: AppColors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+          borderSide: BorderSide(
+            color: AppColors.lightBlue,
+            width: 2.w,
+          ),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+          borderSide: BorderSide(
+            color: Colors.red,
+            width: 2.w,
+          ),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+          borderSide: BorderSide(
+            color: Colors.red,
+            width: 2.w,
+          ),
+        ),
+        labelStyle: TextStyle(
+          color: AppColors.mediumBlue,
+          fontSize: AppDimensions.textMd,
+        ),
+        hintStyle: TextStyle(
+          color: AppColors.darkBrown.withOpacity(0.5),
+          fontSize: AppDimensions.textMd,
+        ),
+        errorStyle: TextStyle(
+          color: Colors.red,
+          fontSize: AppDimensions.textSm,
+        ),
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: AppDimensions.paddingMd,
+          vertical: AppDimensions.paddingMd,
+        ),
+      ),
+      
+      // Configuración de iconos
+      iconTheme: IconThemeData(
+        color: AppColors.mediumBlue,
+        size: AppDimensions.iconMd,
+      ),
+      
+      // Configuración de texto
+      textTheme: TextTheme(
+        headlineLarge: TextStyle(
+          color: AppColors.darkBrown,
+          fontSize: AppDimensions.textHeading,
+          fontWeight: FontWeight.bold,
+        ),
+        headlineMedium: TextStyle(
+          color: AppColors.darkBrown,
+          fontSize: AppDimensions.textTitle,
+          fontWeight: FontWeight.bold,
+        ),
+        titleLarge: TextStyle(
+          color: AppColors.darkBrown,
+          fontSize: AppDimensions.textXl,
+          fontWeight: FontWeight.w600,
+        ),
+        titleMedium: TextStyle(
+          color: AppColors.darkBrown,
+          fontSize: AppDimensions.textLg,
+          fontWeight: FontWeight.w500,
+        ),
+        bodyLarge: TextStyle(
+          color: AppColors.darkBrown,
+          fontSize: AppDimensions.textLg,
+        ),
+        bodyMedium: TextStyle(
+          color: AppColors.darkBrown,
+          fontSize: AppDimensions.textMd,
+        ),
+        bodySmall: TextStyle(
+          color: AppColors.darkBrown,
+          fontSize: AppDimensions.textSm,
+        ),
+        labelLarge: TextStyle(
+          color: AppColors.mediumBlue,
+          fontSize: AppDimensions.textMd,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      
+      // Configuración de cards
+      cardTheme: CardThemeData(
+        color: AppColors.white,
+        elevation: AppDimensions.elevationSm,
+        shadowColor: AppColors.blackWithOpacity(0.1),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+        ),
+        margin: EdgeInsets.all(AppDimensions.marginSm),
+      ),
+      
+      // Configuración de dividers
+      dividerTheme: DividerThemeData(
+        color: AppColors.darkBrown.withOpacity(0.1),
+        thickness: 1.w,
+        space: AppDimensions.marginMd,
+      ),
+      
+      // Configuración de snackbars
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: AppColors.mediumBlue,
+        contentTextStyle: TextStyle(
+          color: AppColors.white,
+          fontSize: AppDimensions.textMd,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+        ),
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }
