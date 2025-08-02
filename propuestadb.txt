@@ -1,0 +1,59 @@
+1. Colección usuarios
+Almacena a los dos roles (admin / ayudante) y sus credenciales:
+
+usuarios (collection)
+ └── {usuarioId} (document)
+      • usuario   : string    // nombre de login
+      • pass      : string    // contraseña (hasheada)
+      • nom       : string    // nombre
+      • apePat    : string    // apellido paterno
+      • apeMat    : string    // apellido materno
+      • rol       : string    // "admin" | "ayudante"
+      • fhCre     : timestamp // fecha de creación
+
+2. Colección clientes
+Para autocompletar y vincular ventas:
+
+clientes (collection)
+ └── {clienteId} (document)
+      • nom       : string    // nombre
+      • apePat    : string    // apellido paterno
+      • apeMat    : string    // apellido materno
+      • distrito : string    // distrito
+      • referencia  : string    // referencia de vivienda
+      • tel       : string    // (opcional) teléfono
+      • crePor    : reference // referencia a usuarios/{usuarioId} que registró
+      • fhCre     : timestamp // fecha de creación
+
+3. Colección ventas
+Cada vez que se vende o recarga:
+
+ventas (collection)
+ └── {ventaId} (document)
+      • fh        : timestamp   // fecha y hora de la transacción
+      • cliRef    : reference   // referencia a clientes/{clienteId}
+      • tp        : string      // "nueva" (garrafón + agua) o "recarga"
+      • cant      : number      // cantidad de garrafones (p. ej. 1, 2, …)
+      • pUnit     : number      // precio unitario cobrado (S/ x)
+      • costBid   : number      // costo que pagó el distribuidor por el bidón (S/ x)
+      • tot       : number      // monto total pagado por el cliente (S/ y)
+      • usrRef    : reference   // referencia a usuarios/{usuarioId} que registró
+
+Nota:
+
+Para filtrar por “hoy”, “semana”, etc., usarás filtro sobre el campo fh (tipo timestamp).
+
+El campo costBid te permite ingresar en cada venta cuánto te costó el bidón sin manejar tipos predefinidos de cliente.
+
+4. (Opcional) Colección inventario
+Para llevar control de stock de bidones vacíos:
+
+inventario (collection)
+ └── bidones (document)
+      • tot       : number    // stock total inicial
+      • disp      : number    // stock vacíos disponibles
+      • fhAct     : timestamp // última fecha de actualización
+
+Aumentas disp cuando compras más bidones.
+
+Al registrarse una venta “nueva”, restas cant de disp.
