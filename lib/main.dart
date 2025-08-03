@@ -5,8 +5,11 @@ import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'constants/app_colors.dart';
 import 'constants/app_dimensions.dart';
+import 'models/user_model.dart';
 import 'viewmodels/login_viewmodel.dart';
+import 'viewmodels/dashboard_viewmodel.dart';
 import 'views/login_view.dart';
+import 'screens/dashboard_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,12 +32,21 @@ class MyApp extends StatelessWidget {
         return MultiProvider(
           providers: [
             ChangeNotifierProvider(create: (_) => LoginViewModel()),
+            ChangeNotifierProvider(create: (_) => DashboardViewModel()),
           ],
           child: MaterialApp(
             title: 'Distribuidor de Agua',
             debugShowCheckedModeBanner: false,
             theme: _buildTheme(),
-            home: const LoginView(),
+            initialRoute: '/',
+            routes: {
+              '/': (context) => const LoginView(),
+              '/login': (context) => const LoginView(),
+              '/dashboard': (context) {
+                final UserModel usuario = ModalRoute.of(context)!.settings.arguments as UserModel;
+                return DashboardScreen(usuario: usuario);
+              },
+            },
           ),
         );
       },

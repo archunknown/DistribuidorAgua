@@ -22,8 +22,8 @@ migrate_working_dir/
 .melos_tool/
 
 #extras
-CasoProyecto.txt
-propuestadb.txt
+#CasoProyecto.txt
+#propuestadb.txt
 
 # Firebase
 firebase_options.dart
