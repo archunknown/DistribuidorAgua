@@ -8,6 +8,7 @@ import 'constants/app_dimensions.dart';
 import 'models/user_model.dart';
 import 'viewmodels/login_viewmodel.dart';
 import 'viewmodels/dashboard_viewmodel.dart';
+import 'viewmodels/nueva_venta_viewmodel.dart';
 import 'views/login_view.dart';
 import 'screens/dashboard_screen.dart';
 

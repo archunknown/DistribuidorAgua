@@ -8,7 +8,7 @@ import '../services/auth_service.dart';
 import '../viewmodels/dashboard_viewmodel.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/loading_overlay.dart';
-// import 'nueva_venta_screen.dart';
+import 'nueva_venta_screen.dart';
 // import 'clientes_screen.dart';
 // import 'inventario_screen.dart';
 // import 'reportes_screen.dart';
@@ -545,11 +545,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  void _navegarANuevaVenta() {
-    // TODO: Implementar navegación a Nueva Venta
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Funcionalidad en desarrollo')),
+  void _navegarANuevaVenta() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => NuevaVentaScreen(usuario: widget.usuario),
+      ),
     );
+    
+    // Si se registró una venta, refrescar el dashboard
+    if (result == true) {
+      _viewModel.refrescar();
+    }
   }
 
   void _navegarAClientes() {
