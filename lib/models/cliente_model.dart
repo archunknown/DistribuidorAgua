@@ -1,50 +1,54 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class UserModel {
+class ClienteModel {
   final String id;
-  final String usuario;
-  final String pass;
   final String nombre;
   final String apellidoPaterno;
   final String apellidoMaterno;
-  final String rol;
+  final String distrito;
+  final String referencia;
+  final String? telefono;
+  final String creadoPorId;
   final DateTime fechaCreacion;
 
-  UserModel({
+  ClienteModel({
     required this.id,
-    required this.usuario,
-    required this.pass,
     required this.nombre,
     required this.apellidoPaterno,
     required this.apellidoMaterno,
-    required this.rol,
+    required this.distrito,
+    required this.referencia,
+    this.telefono,
+    required this.creadoPorId,
     required this.fechaCreacion,
   });
 
   // Constructor para crear desde Firestore
-  factory UserModel.fromFirestore(Map<String, dynamic> data, String id) {
-    return UserModel(
+  factory ClienteModel.fromFirestore(Map<String, dynamic> data, String id) {
+    return ClienteModel(
       id: id,
-      usuario: data['usuario'] ?? '',
-      pass: data['pass'] ?? '',
       nombre: data['nom'] ?? '',
       apellidoPaterno: data['apePat'] ?? '',
       apellidoMaterno: data['apeMat'] ?? '',
-      rol: data['rol'] ?? '',
-      fechaCreacion: data['fhCre']?.toDate() ?? DateTime.now(),
+      distrito: data['distrito'] ?? '',
+      referencia: data['referencia'] ?? '',
+      telefono: data['tel'],
+      creadoPorId: data['crePor'] ?? '',
+      fechaCreacion: (data['fhCre'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
 
   // Convertir a Map para Firestore
   Map<String, dynamic> toFirestore() {
     return {
-      'usuario': usuario,
-      'pass': pass,
       'nom': nombre,
       'apePat': apellidoPaterno,
       'apeMat': apellidoMaterno,
-      'rol': rol,
-      'fhCre': fechaCreacion,
+      'distrito': distrito,
+      'referencia': referencia,
+      'tel': telefono,
+      'crePor': creadoPorId,
+      'fhCre': Timestamp.fromDate(fechaCreacion),
     };
   }
 
@@ -60,44 +64,45 @@ class UserModel {
     return '$inicialNombre$inicialApellido';
   }
 
-  // Verificar si es admin
-  bool get isAdmin => rol.toLowerCase() == 'admin';
-
-  // Verificar si es ayudante
-  bool get isAyudante => rol.toLowerCase() == 'ayudante';
+  // Getter para dirección completa
+  String get direccionCompleta {
+    return '$distrito - $referencia'.trim();
+  }
 
   // Copiar con modificaciones
-  UserModel copyWith({
+  ClienteModel copyWith({
     String? id,
-    String? usuario,
-    String? pass,
     String? nombre,
     String? apellidoPaterno,
     String? apellidoMaterno,
-    String? rol,
+    String? distrito,
+    String? referencia,
+    String? telefono,
+    String? creadoPorId,
     DateTime? fechaCreacion,
   }) {
-    return UserModel(
+    return ClienteModel(
       id: id ?? this.id,
-      usuario: usuario ?? this.usuario,
-      pass: pass ?? this.pass,
       nombre: nombre ?? this.nombre,
       apellidoPaterno: apellidoPaterno ?? this.apellidoPaterno,
       apellidoMaterno: apellidoMaterno ?? this.apellidoMaterno,
-      rol: rol ?? this.rol,
+      distrito: distrito ?? this.distrito,
+      referencia: referencia ?? this.referencia,
+      telefono: telefono ?? this.telefono,
+      creadoPorId: creadoPorId ?? this.creadoPorId,
       fechaCreacion: fechaCreacion ?? this.fechaCreacion,
     );
   }
 
   @override
   String toString() {
-    return 'UserModel(id: $id, usuario: $usuario, nombreCompleto: $nombreCompleto, rol: $rol)';
+    return 'ClienteModel(id: $id, nombreCompleto: $nombreCompleto, distrito: $distrito)';
   }
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is UserModel && other.id == id;
+    return other is ClienteModel && other.id == id;
   }
 
   @override
