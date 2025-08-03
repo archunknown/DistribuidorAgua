@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import '../models/user_model.dart';
 import '../models/cliente_model.dart';
 import '../models/venta_model.dart';
@@ -26,7 +27,13 @@ class NuevaVentaViewModel extends ChangeNotifier {
   
   // Lista de clientes para autocompletado
   List<ClienteModel> _clientesSugeridos = [];
+  List<ClienteModel> _todosLosClientes = []; // Cache de todos los clientes
   InventarioModel? _inventarioActual;
+  bool _isBuscandoClientes = false;
+
+  // Debouncing para búsqueda
+  Timer? _debounceTimer;
+  String _ultimaBusqueda = '';
 
   // Controladores de texto
   final TextEditingController clienteController = TextEditingController();
@@ -45,6 +52,7 @@ class NuevaVentaViewModel extends ChangeNotifier {
   double get costoBidon => _costoBidon;
   List<ClienteModel> get clientesSugeridos => _clientesSugeridos;
   InventarioModel? get inventarioActual => _inventarioActual;
+  bool get isBuscandoClientes => _isBuscandoClientes;
 
   // Cálculos automáticos
   double get total => _precioUnitario * _cantidad;
@@ -56,7 +64,10 @@ class NuevaVentaViewModel extends ChangeNotifier {
   Future<void> inicializar() async {
     _setLoading(true);
     try {
-      await _cargarInventario();
+      await Future.wait([
+        _cargarInventario(),
+        _cargarCacheClientes(), // Cargar cache de clientes para mejor rendimiento
+      ]);
       _actualizarPreciosPorDefecto();
     } catch (e) {
       _setError('Error al inicializar: $e');
@@ -75,26 +86,87 @@ class NuevaVentaViewModel extends ChangeNotifier {
     }
   }
 
-  // Buscar clientes para autocompletado
-  Future<void> buscarClientes(String query) async {
+  // Buscar clientes para autocompletado con debouncing
+  void buscarClientes(String query) {
+    // Cancelar búsqueda anterior si existe
+    _debounceTimer?.cancel();
+    
     if (query.isEmpty) {
       _clientesSugeridos.clear();
+      _isBuscandoClientes = false;
+      _ultimaBusqueda = '';
       notifyListeners();
       return;
     }
 
+    // Si es la misma búsqueda, no hacer nada
+    if (query == _ultimaBusqueda) return;
+
+    _ultimaBusqueda = query;
+    _isBuscandoClientes = true;
+    notifyListeners();
+
+    // Configurar debounce de 300ms
+    _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+      _ejecutarBusquedaClientes(query);
+    });
+  }
+
+  // Ejecutar búsqueda real de clientes
+  Future<void> _ejecutarBusquedaClientes(String query) async {
     try {
-      _clientesSugeridos = await _clienteService.buscarClientesPorNombre(query);
+      // Primero buscar en cache local si existe
+      if (_todosLosClientes.isNotEmpty) {
+        _clientesSugeridos = _filtrarClientesLocalmente(query);
+      } else {
+        // Si no hay cache, buscar en servidor
+        _clientesSugeridos = await _clienteService.buscarClientesPorNombre(query);
+        
+        // Actualizar cache si es la primera búsqueda
+        if (_todosLosClientes.isEmpty && query.length <= 2) {
+          _todosLosClientes = await _clienteService.obtenerTodosLosClientes();
+        }
+      }
+      
+      _isBuscandoClientes = false;
       notifyListeners();
     } catch (e) {
       debugPrint('Error buscando clientes: $e');
+      _isBuscandoClientes = false;
+      notifyListeners();
+    }
+  }
+
+  // Filtrar clientes localmente para mejor rendimiento
+  List<ClienteModel> _filtrarClientesLocalmente(String query) {
+    final queryLower = query.toLowerCase();
+    return _todosLosClientes.where((cliente) {
+      return cliente.nombreCompleto.toLowerCase().contains(queryLower) ||
+             cliente.distrito.toLowerCase().contains(queryLower) ||
+             cliente.referencia.toLowerCase().contains(queryLower) ||
+             (cliente.telefono?.toLowerCase().contains(queryLower) ?? false);
+    }).take(10).toList(); // Limitar a 10 resultados para mejor rendimiento
+  }
+
+  // Cargar todos los clientes para cache (llamar al inicializar)
+  Future<void> _cargarCacheClientes() async {
+    try {
+      _todosLosClientes = await _clienteService.obtenerTodosLosClientes();
+    } catch (e) {
+      debugPrint('Error cargando cache de clientes: $e');
     }
   }
 
   // Seleccionar cliente
   void seleccionarCliente(ClienteModel cliente) {
-    _clienteSeleccionado = cliente;
-    clienteController.text = cliente.nombreCompleto;
+    // Si el cliente tiene ID vacío, significa que se está limpiando la selección
+    if (cliente.id.isEmpty) {
+      _clienteSeleccionado = null;
+      clienteController.clear();
+    } else {
+      _clienteSeleccionado = cliente;
+      clienteController.text = cliente.nombreCompleto;
+    }
     _clientesSugeridos.clear();
     _clearMessages();
     notifyListeners();
@@ -310,6 +382,7 @@ class NuevaVentaViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    _debounceTimer?.cancel(); // Limpiar timer de debouncing
     clienteController.dispose();
     cantidadController.dispose();
     precioController.dispose();
