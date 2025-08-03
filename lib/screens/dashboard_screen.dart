@@ -11,7 +11,7 @@ import '../widgets/loading_overlay.dart';
 import 'nueva_venta_screen.dart';
 import 'clientes_screen.dart';
 import 'inventario_screen.dart';
-// import 'reportes_screen.dart';
+import 'reportes_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final UserModel usuario;
@@ -587,11 +587,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  void _navegarAReportes() {
-    // TODO: Implementar navegación a Reportes
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Funcionalidad en desarrollo')),
+  void _navegarAReportes() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ReportesScreen(usuario: widget.usuario),
+      ),
     );
+    
+    // Si se realizaron cambios en reportes, refrescar el dashboard
+    if (result == true) {
+      _viewModel.refrescar();
+    }
   }
 
   void _cerrarSesion() async {
