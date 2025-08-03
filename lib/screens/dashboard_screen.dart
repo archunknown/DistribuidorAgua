@@ -9,7 +9,7 @@ import '../viewmodels/dashboard_viewmodel.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/loading_overlay.dart';
 import 'nueva_venta_screen.dart';
-// import 'clientes_screen.dart';
+import 'clientes_screen.dart';
 // import 'inventario_screen.dart';
 // import 'reportes_screen.dart';
 
@@ -559,11 +559,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  void _navegarAClientes() {
-    // TODO: Implementar navegación a Clientes
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Funcionalidad en desarrollo')),
+  void _navegarAClientes() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ClientesScreen(usuario: widget.usuario),
+      ),
     );
+    
+    // Si se realizaron cambios en clientes, refrescar el dashboard
+    if (result == true) {
+      _viewModel.refrescar();
+    }
   }
 
   void _navegarAInventario() {
