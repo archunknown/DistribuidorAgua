@@ -21,6 +21,10 @@ migrate_working_dir/
 .packages
 .melos_tool/
 
+#extras
+CasoProyecto.txt
+propuestadb.txt
+
 # Firebase
 firebase_options.dart
 google-services.json
