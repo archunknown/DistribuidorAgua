@@ -15,10 +15,18 @@ class InventarioViewModel extends ChangeNotifier {
   InventarioModel? _inventario;
   List<Map<String, dynamic>> _historialMovimientos = [];
 
-  // Controladores para formularios
-  final TextEditingController stockInicialController = TextEditingController();
+  // Controladores separados para cada sección
+  // Sección 1: Actualizar Stock Total
+  final TextEditingController stockTotalController = TextEditingController();
+  final TextEditingController motivoStockTotalController = TextEditingController();
+  
+  // Sección 2: Agregar Stock
+  final TextEditingController agregarStockController = TextEditingController();
+  final TextEditingController motivoAgregarController = TextEditingController();
+  
+  // Sección 3: Ajustar Stock Disponible
   final TextEditingController ajusteStockController = TextEditingController();
-  final TextEditingController motivoController = TextEditingController();
+  final TextEditingController motivoAjusteController = TextEditingController();
 
   // Getters
   bool get isLoading => _isLoading;
@@ -129,8 +137,8 @@ class InventarioViewModel extends ChangeNotifier {
           'stockResultante': nuevoStockTotal,
         });
         
-        stockInicialController.clear();
-        motivoController.clear();
+        stockTotalController.clear();
+        motivoStockTotalController.clear();
         return true;
       } else {
         _setError('Error al actualizar el stock total');
@@ -176,8 +184,8 @@ class InventarioViewModel extends ChangeNotifier {
           'stockResultante': _inventario?.stockTotal ?? 0,
         });
         
-        ajusteStockController.clear();
-        motivoController.clear();
+        agregarStockController.clear();
+        motivoAgregarController.clear();
         return true;
       } else {
         _setError('Error al agregar stock');
@@ -232,7 +240,7 @@ class InventarioViewModel extends ChangeNotifier {
         });
         
         ajusteStockController.clear();
-        motivoController.clear();
+        motivoAjusteController.clear();
         return true;
       } else {
         _setError('Error al ajustar stock');
@@ -359,9 +367,18 @@ class InventarioViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
-    stockInicialController.dispose();
+    // Sección 1: Actualizar Stock Total
+    stockTotalController.dispose();
+    motivoStockTotalController.dispose();
+    
+    // Sección 2: Agregar Stock
+    agregarStockController.dispose();
+    motivoAgregarController.dispose();
+    
+    // Sección 3: Ajustar Stock Disponible
     ajusteStockController.dispose();
-    motivoController.dispose();
+    motivoAjusteController.dispose();
+    
     super.dispose();
   }
 }

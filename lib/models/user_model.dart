@@ -61,7 +61,7 @@ class UserModel {
   }
 
   // Verificar si es admin
-  bool get isAdmin => rol.toLowerCase() == 'admin';
+  bool get isAdmin => rol.toLowerCase() == 'admin' || rol.toLowerCase() == 'administrador';
 
   // Verificar si es ayudante
   bool get isAyudante => rol.toLowerCase() == 'ayudante';
