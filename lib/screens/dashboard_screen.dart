@@ -524,6 +524,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   // TODO: Navegar a gestión de usuarios
                 },
               ),
+              const Divider(),
+              ListTile(
+                leading: Icon(Icons.warning, color: Colors.red),
+                title: Text(
+                  'Resetear Datos (DEV)',
+                  style: TextStyle(color: Colors.red),
+                ),
+                subtitle: Text(
+                  'Solo para desarrollo',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _mostrarDialogoResetearDatos();
+                },
+              ),
             ],
             ListTile(
               leading: Icon(Icons.settings, color: AppColors.mediumBlue),
@@ -598,6 +614,241 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // Si se realizaron cambios en reportes, refrescar el dashboard
     if (result == true) {
       _viewModel.refrescar();
+    }
+  }
+
+  void _mostrarDialogoResetearDatos() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning, color: Colors.red),
+            SizedBox(width: 8),
+            Text('⚠️ RESETEAR DATOS'),
+          ],
+        ),
+        content: const Text(
+          '🚨 ATENCIÓN: Esta acción eliminará TODOS los datos de la aplicación:\n\n'
+          '• Todos los clientes\n'
+          '• Todas las ventas\n'
+          '• Resetear inventario a 100 bidones\n\n'
+          '⚠️ Esta acción NO se puede deshacer.\n\n'
+          '¿Estás seguro de que deseas continuar?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _ejecutarReseteoCompleto();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: const Text('SÍ, RESETEAR TODO'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _ejecutarReseteoCompleto() async {
+    // Mostrar estadísticas actuales antes del reseteo
+    final estadisticasActuales = await _viewModel.obtenerEstadisticasActuales();
+    
+    if (mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text('Datos Actuales'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Se eliminarán los siguientes datos:'),
+              const SizedBox(height: 12),
+              Text('📊 Clientes: ${estadisticasActuales['totalClientes']}'),
+              Text('💰 Ventas: ${estadisticasActuales['totalVentas']}'),
+              Text('📦 Stock actual: ${estadisticasActuales['stockActual']} bidones'),
+              const SizedBox(height: 16),
+              const Text(
+                '¿Confirmas el reseteo completo?',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await _realizarReseteo();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+              ),
+              child: const Text('CONFIRMAR RESETEO'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  Future<void> _realizarReseteo() async {
+    // Mostrar diálogo de progreso
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Reseteando datos...'),
+            Text('Por favor espera...'),
+          ],
+        ),
+      ),
+    );
+
+    // Ejecutar reseteo
+    final resultado = await _viewModel.resetearTodosLosDatos();
+
+    // Cerrar diálogo de progreso
+    if (mounted) {
+      Navigator.pop(context);
+    }
+
+    // Mostrar resultado
+    if (mounted) {
+      if (resultado['success'] == true) {
+        _mostrarResultadoReseteo(resultado);
+      } else {
+        _mostrarErrorReseteo(resultado['error'] ?? 'Error desconocido');
+      }
+    }
+  }
+
+  void _mostrarResultadoReseteo(Map<String, dynamic> resultado) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green),
+            SizedBox(width: 8),
+            Text('Reseteo Completado'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(resultado['mensaje'] ?? 'Datos reseteados exitosamente'),
+            const SizedBox(height: 12),
+            Text('✅ Clientes eliminados: ${resultado['clientesEliminados']}'),
+            Text('✅ Ventas eliminadas: ${resultado['ventasEliminadas']}'),
+            Text('✅ Inventario reseteado: ${resultado['inventarioReseteado'] ? 'Sí' : 'No'}'),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue.withOpacity(0.3)),
+              ),
+              child: const Text(
+                '💡 ¿Quieres crear algunos datos de prueba?',
+                style: TextStyle(fontSize: 12),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cerrar'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _crearDatosDePrueba();
+            },
+            child: const Text('Crear Datos de Prueba'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _mostrarErrorReseteo(String error) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.error, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Error en Reseteo'),
+          ],
+        ),
+        content: Text('Error durante el reseteo:\n\n$error'),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cerrar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _crearDatosDePrueba() async {
+    // Mostrar diálogo de progreso
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Creando datos de prueba...'),
+          ],
+        ),
+      ),
+    );
+
+    final resultado = await _viewModel.crearDatosDePrueba();
+
+    // Cerrar diálogo de progreso
+    if (mounted) {
+      Navigator.pop(context);
+    }
+
+    // Mostrar resultado
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            resultado 
+                ? '✅ Datos de prueba creados exitosamente'
+                : '❌ Error creando datos de prueba',
+          ),
+          backgroundColor: resultado ? Colors.green : Colors.red,
+        ),
+      );
     }
   }
 

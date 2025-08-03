@@ -3,6 +3,7 @@ import '../models/venta_model.dart';
 import '../models/inventario_model.dart';
 import '../services/venta_service.dart';
 import '../services/inventario_service.dart';
+import '../services/reset_service.dart';
 
 class DashboardViewModel extends ChangeNotifier {
   final VentaService _ventaService = VentaService();
@@ -174,6 +175,66 @@ class DashboardViewModel extends ChangeNotifier {
   void _setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();
+  }
+
+  // Resetear todos los datos (SOLO PARA DESARROLLO)
+  Future<Map<String, dynamic>> resetearTodosLosDatos() async {
+    _setLoading(true);
+    try {
+      final resetService = ResetService();
+      final resultado = await resetService.resetearTodosLosDatos();
+      
+      // Refrescar datos después del reseteo
+      if (resultado['success'] == true) {
+        await _cargarDatos();
+      }
+      
+      return resultado;
+    } catch (e) {
+      debugPrint('Error reseteando datos: $e');
+      return {
+        'success': false,
+        'error': 'Error durante el reseteo: $e',
+      };
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Obtener estadísticas actuales antes del reseteo
+  Future<Map<String, dynamic>> obtenerEstadisticasActuales() async {
+    try {
+      final resetService = ResetService();
+      return await resetService.obtenerEstadisticasActuales();
+    } catch (e) {
+      debugPrint('Error obteniendo estadísticas actuales: $e');
+      return {
+        'totalClientes': 0,
+        'totalVentas': 0,
+        'stockActual': 0,
+      };
+    }
+  }
+
+  // Crear datos de prueba
+  Future<bool> crearDatosDePrueba() async {
+    _setLoading(true);
+    try {
+      final resetService = ResetService();
+      final resultado = await resetService.crearDatosDePrueba();
+      
+      // Refrescar datos después de crear datos de prueba
+      if (resultado) {
+        await _cargarDatos();
+      }
+      
+      return resultado;
+    } catch (e) {
+      debugPrint('Error creando datos de prueba: $e');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
   }
 
   // Limpiar datos al cerrar sesión
