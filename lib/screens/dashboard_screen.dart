@@ -10,7 +10,7 @@ import '../widgets/custom_button.dart';
 import '../widgets/loading_overlay.dart';
 import 'nueva_venta_screen.dart';
 import 'clientes_screen.dart';
-// import 'inventario_screen.dart';
+import 'inventario_screen.dart';
 // import 'reportes_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -573,11 +573,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  void _navegarAInventario() {
-    // TODO: Implementar navegación a Inventario
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Funcionalidad en desarrollo')),
+  void _navegarAInventario() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => InventarioScreen(usuario: widget.usuario),
+      ),
     );
+    
+    // Si se realizaron cambios en inventario, refrescar el dashboard
+    if (result == true) {
+      _viewModel.refrescar();
+    }
   }
 
   void _navegarAReportes() {
