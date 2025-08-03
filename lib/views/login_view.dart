@@ -32,8 +32,19 @@ class _LoginViewState extends State<LoginView> {
   void _handleLogin() async {
     if (_formKey.currentState!.validate()) {
       final loginViewModel = context.read<LoginViewModel>();
-      await loginViewModel.loginDemo();
-      // El mensaje de éxito o error se mostrará automáticamente en la vista
+      final success = await loginViewModel.loginDemo();
+      
+      if (success && loginViewModel.currentUser != null) {
+        // Navegar al dashboard después del login exitoso
+        if (mounted) {
+          Navigator.pushReplacementNamed(
+            context, 
+            '/dashboard',
+            arguments: loginViewModel.currentUser,
+          );
+        }
+      }
+      // El mensaje de error se mostrará automáticamente en la vista si falla
     }
   }
 
