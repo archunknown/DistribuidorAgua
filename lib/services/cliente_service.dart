@@ -146,9 +146,10 @@ class ClienteService {
   Future<bool> eliminarCliente(String clienteId) async {
     try {
       // Verificar si el cliente tiene ventas asociadas
+      final clienteRef = _firestore.collection(_clientesCollection).doc(clienteId);
       final ventasQuery = await _firestore
           .collection('ventas')
-          .where('cliRef', isEqualTo: clienteId)
+          .where('cliRef', isEqualTo: clienteRef)
           .limit(1)
           .get();
 
@@ -167,6 +168,132 @@ class ClienteService {
     } catch (e) {
       debugPrint('Error eliminando cliente: $e');
       return false;
+    }
+  }
+
+  // Método para limpiar datos huérfanos (solo para administradores)
+  Future<Map<String, dynamic>> limpiarDatosHuerfanos() async {
+    try {
+      int ventasLimpiadas = 0;
+      int stockRestaurado = 0;
+
+      // Obtener todas las ventas
+      final ventasSnapshot = await _firestore.collection('ventas').get();
+      
+      for (final ventaDoc in ventasSnapshot.docs) {
+        final ventaData = ventaDoc.data();
+        final clienteRef = ventaData['cliRef'] as DocumentReference?;
+        
+        if (clienteRef != null) {
+          // Verificar si el cliente existe
+          final clienteDoc = await clienteRef.get();
+          
+          if (!clienteDoc.exists) {
+            // Cliente no existe, esta venta es huérfana
+            debugPrint('Venta huérfana encontrada: ${ventaDoc.id}');
+            
+            // Si era venta nueva o préstamo, restaurar stock
+            final tipoVenta = ventaData['tp'] as String?;
+            final cantidad = ventaData['cant'] as int? ?? 0;
+            
+            if ((tipoVenta == 'nueva' || tipoVenta == 'prestamo') && cantidad > 0) {
+              // Restaurar stock al inventario
+              final inventarioDoc = await _firestore
+                  .collection('inventario')
+                  .doc('bidones')
+                  .get();
+              
+              if (inventarioDoc.exists) {
+                final inventarioData = inventarioDoc.data()!;
+                final stockActual = inventarioData['stockDisponible'] as int? ?? 0;
+                final nuevoStock = stockActual + cantidad;
+                
+                await _firestore
+                    .collection('inventario')
+                    .doc('bidones')
+                    .update({
+                  'stockDisponible': nuevoStock,
+                  'fechaActualizacion': FieldValue.serverTimestamp(),
+                });
+                
+                stockRestaurado += cantidad;
+                debugPrint('Stock restaurado: $cantidad bidones');
+              }
+            }
+            
+            // Eliminar la venta huérfana
+            await ventaDoc.reference.delete();
+            ventasLimpiadas++;
+          }
+        }
+      }
+
+      return {
+        'ventasLimpiadas': ventasLimpiadas,
+        'stockRestaurado': stockRestaurado,
+        'mensaje': ventasLimpiadas > 0 
+            ? 'Se limpiaron $ventasLimpiadas ventas huérfanas y se restauraron $stockRestaurado bidones al inventario'
+            : 'No se encontraron datos huérfanos',
+      };
+    } catch (e) {
+      debugPrint('Error limpiando datos huérfanos: $e');
+      return {
+        'ventasLimpiadas': 0,
+        'stockRestaurado': 0,
+        'error': 'Error durante la limpieza: $e',
+      };
+    }
+  }
+
+  // Verificar integridad de datos
+  Future<Map<String, dynamic>> verificarIntegridadDatos() async {
+    try {
+      int ventasHuerfanas = 0;
+      int clientesSinVentas = 0;
+      
+      // Verificar ventas huérfanas
+      final ventasSnapshot = await _firestore.collection('ventas').get();
+      
+      for (final ventaDoc in ventasSnapshot.docs) {
+        final ventaData = ventaDoc.data();
+        final clienteRef = ventaData['cliRef'] as DocumentReference?;
+        
+        if (clienteRef != null) {
+          final clienteDoc = await clienteRef.get();
+          if (!clienteDoc.exists) {
+            ventasHuerfanas++;
+          }
+        }
+      }
+
+      // Verificar clientes sin ventas (opcional, para estadísticas)
+      final clientesSnapshot = await _firestore.collection(_clientesCollection).get();
+      
+      for (final clienteDoc in clientesSnapshot.docs) {
+        final clienteRef = _firestore.collection(_clientesCollection).doc(clienteDoc.id);
+        final ventasCliente = await _firestore
+            .collection('ventas')
+            .where('cliRef', isEqualTo: clienteRef)
+            .limit(1)
+            .get();
+        
+        if (ventasCliente.docs.isEmpty) {
+          clientesSinVentas++;
+        }
+      }
+
+      return {
+        'ventasHuerfanas': ventasHuerfanas,
+        'clientesSinVentas': clientesSinVentas,
+        'totalClientes': clientesSnapshot.docs.length,
+        'totalVentas': ventasSnapshot.docs.length,
+        'integridad': ventasHuerfanas == 0 ? 'Buena' : 'Problemas detectados',
+      };
+    } catch (e) {
+      debugPrint('Error verificando integridad: $e');
+      return {
+        'error': 'Error verificando integridad: $e',
+      };
     }
   }
 

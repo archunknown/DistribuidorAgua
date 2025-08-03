@@ -85,9 +85,41 @@ class _ClientesScreenState extends State<ClientesScreen> with SingleTickerProvid
       actions: [
         Consumer<ClientesViewModel>(
           builder: (context, viewModel, child) {
-            return IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: () => viewModel.refrescar(),
+            return PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert),
+              onSelected: (value) => _manejarAccionMenu(value, viewModel),
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'refrescar',
+                  child: Row(
+                    children: [
+                      Icon(Icons.refresh),
+                      SizedBox(width: 8),
+                      Text('Refrescar'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'verificar',
+                  child: Row(
+                    children: [
+                      Icon(Icons.verified_user),
+                      SizedBox(width: 8),
+                      Text('Verificar Integridad'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'limpiar',
+                  child: Row(
+                    children: [
+                      Icon(Icons.cleaning_services),
+                      SizedBox(width: 8),
+                      Text('Limpiar Datos Huérfanos'),
+                    ],
+                  ),
+                ),
+              ],
             );
           },
         ),
@@ -1027,6 +1059,203 @@ class _ClientesScreenState extends State<ClientesScreen> with SingleTickerProvid
               backgroundColor: AppColors.error,
             ),
             child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _manejarAccionMenu(String accion, ClientesViewModel viewModel) async {
+    switch (accion) {
+      case 'refrescar':
+        await viewModel.refrescar();
+        break;
+      case 'verificar':
+        _mostrarDialogoVerificarIntegridad(viewModel);
+        break;
+      case 'limpiar':
+        _mostrarDialogoLimpiarDatos(viewModel);
+        break;
+    }
+  }
+
+  void _mostrarDialogoVerificarIntegridad(ClientesViewModel viewModel) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.verified_user, color: Colors.blue),
+            SizedBox(width: 8),
+            Text('Verificar Integridad'),
+          ],
+        ),
+        content: const Text(
+          'Esta acción verificará la integridad de los datos, '
+          'buscando ventas huérfanas y otros problemas de consistencia.\n\n'
+          '¿Deseas continuar?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              
+              final resultado = await viewModel.verificarIntegridadDatos();
+              
+              if (mounted) {
+                _mostrarResultadoIntegridad(resultado);
+              }
+            },
+            child: const Text('Verificar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _mostrarDialogoLimpiarDatos(ClientesViewModel viewModel) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.cleaning_services, color: Colors.orange),
+            SizedBox(width: 8),
+            Text('Limpiar Datos Huérfanos'),
+          ],
+        ),
+        content: const Text(
+          'Esta acción eliminará las ventas huérfanas (ventas de clientes que ya no existen) '
+          'y restaurará el stock correspondiente al inventario.\n\n'
+          '⚠️ Esta acción no se puede deshacer.\n\n'
+          '¿Deseas continuar?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              
+              final resultado = await viewModel.limpiarDatosHuerfanos();
+              
+              if (mounted) {
+                _mostrarResultadoLimpieza(resultado);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+            ),
+            child: const Text('Limpiar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _mostrarResultadoIntegridad(Map<String, dynamic> resultado) {
+    final ventasHuerfanas = resultado['ventasHuerfanas'] ?? 0;
+    final totalVentas = resultado['totalVentas'] ?? 0;
+    final totalClientes = resultado['totalClientes'] ?? 0;
+    final integridad = resultado['integridad'] ?? 'Desconocida';
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+              ventasHuerfanas > 0 ? Icons.warning : Icons.check_circle,
+              color: ventasHuerfanas > 0 ? Colors.orange : Colors.green,
+            ),
+            const SizedBox(width: 8),
+            const Text('Resultado de Verificación'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Estado: $integridad'),
+            const SizedBox(height: 8),
+            Text('Total de clientes: $totalClientes'),
+            Text('Total de ventas: $totalVentas'),
+            Text('Ventas huérfanas: $ventasHuerfanas'),
+            if (ventasHuerfanas > 0) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                ),
+                child: const Text(
+                  '⚠️ Se recomienda ejecutar la limpieza de datos huérfanos.',
+                  style: TextStyle(fontSize: 12),
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cerrar'),
+          ),
+          if (ventasHuerfanas > 0)
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _mostrarDialogoLimpiarDatos(_viewModel);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+              ),
+              child: const Text('Limpiar Ahora'),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _mostrarResultadoLimpieza(Map<String, dynamic> resultado) {
+    final ventasLimpiadas = resultado['ventasLimpiadas'] ?? 0;
+    final stockRestaurado = resultado['stockRestaurado'] ?? 0;
+    final mensaje = resultado['mensaje'] ?? 'Operación completada';
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green),
+            SizedBox(width: 8),
+            Text('Limpieza Completada'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(mensaje),
+            const SizedBox(height: 12),
+            if (ventasLimpiadas > 0) ...[
+              Text('✅ Ventas huérfanas eliminadas: $ventasLimpiadas'),
+              Text('📦 Stock restaurado: $stockRestaurado bidones'),
+            ],
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cerrar'),
           ),
         ],
       ),

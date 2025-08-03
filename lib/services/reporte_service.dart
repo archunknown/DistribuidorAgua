@@ -51,10 +51,17 @@ class ReporteService {
             final clienteDoc = await (ventaData['cliRef'] as DocumentReference).get();
             if (clienteDoc.exists) {
               final clienteData = clienteDoc.data() as Map<String, dynamic>;
-              clienteNombre = '${clienteData['nom']} ${clienteData['apePat']} ${clienteData['apeMat']}';
+              final nombre = clienteData['nom']?.toString() ?? '';
+              final apePat = clienteData['apePat']?.toString() ?? '';
+              final apeMat = clienteData['apeMat']?.toString() ?? '';
+              clienteNombre = '$nombre $apePat $apeMat'.trim();
+              if (clienteNombre.isEmpty) {
+                clienteNombre = 'Cliente sin nombre';
+              }
             }
           } catch (e) {
             debugPrint('Error obteniendo cliente: $e');
+            clienteNombre = 'Error al cargar cliente';
           }
         }
         
