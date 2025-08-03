@@ -38,13 +38,13 @@ class VentaService {
 
       final ventaData = {
         'fh': FieldValue.serverTimestamp(),
-        'cliRef': clienteId,
+        'cliRef': _firestore.collection('clientes').doc(clienteId),
         'tp': tipo.name,
         'cant': cantidad,
         'pUnit': precioUnitario,
         'costBid': costoBidon,
         'tot': total,
-        'usrRef': usuarioActual.id,
+        'usrRef': _firestore.collection('usuarios').doc(usuarioActual.id),
       };
 
       final docRef = await _firestore
@@ -150,9 +150,10 @@ class VentaService {
   // Obtener ventas por cliente
   Future<List<VentaModel>> obtenerVentasPorCliente(String clienteId) async {
     try {
+      final clienteRef = _firestore.collection('clientes').doc(clienteId);
       final querySnapshot = await _firestore
           .collection(_ventasCollection)
-          .where('cliRef', isEqualTo: clienteId)
+          .where('cliRef', isEqualTo: clienteRef)
           .orderBy('fh', descending: true)
           .get();
 
