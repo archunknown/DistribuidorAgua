@@ -26,7 +26,11 @@ class InventarioScreen extends StatefulWidget {
 class _InventarioScreenState extends State<InventarioScreen> with SingleTickerProviderStateMixin {
   late InventarioViewModel _viewModel;
   late TabController _tabController;
-  final _formKey = GlobalKey<FormState>();
+  
+  // Claves de formulario separadas para cada sección
+  final _stockTotalFormKey = GlobalKey<FormState>();
+  final _agregarStockFormKey = GlobalKey<FormState>();
+  final _ajusteStockFormKey = GlobalKey<FormState>();
 
   @override
   void initState() {
@@ -488,20 +492,17 @@ class _InventarioScreenState extends State<InventarioScreen> with SingleTickerPr
   Widget _buildControlStockTab(InventarioViewModel viewModel) {
     return SingleChildScrollView(
       padding: EdgeInsets.all(AppDimensions.paddingLg),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildEstadoActual(viewModel),
-            SizedBox(height: AppDimensions.marginLg),
-            _buildAccionesStock(viewModel),
-            if (viewModel.errorMessage != null)
-              _buildErrorMessage(viewModel.errorMessage!),
-            if (viewModel.successMessage != null)
-              _buildSuccessMessage(viewModel.successMessage!),
-          ],
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildEstadoActual(viewModel),
+          SizedBox(height: AppDimensions.marginLg),
+          _buildAccionesStock(viewModel),
+          if (viewModel.errorMessage != null)
+            _buildErrorMessage(viewModel.errorMessage!),
+          if (viewModel.successMessage != null)
+            _buildSuccessMessage(viewModel.successMessage!),
+        ],
       ),
     );
   }
@@ -599,7 +600,7 @@ class _InventarioScreenState extends State<InventarioScreen> with SingleTickerPr
           AppColors.mediumBlue,
           [
             CustomTextField(
-              controller: viewModel.stockInicialController,
+              controller: viewModel.stockTotalController,
               labelText: 'Nuevo Stock Total *',
               prefixIcon: Icons.inventory,
               keyboardType: TextInputType.number,
@@ -608,7 +609,7 @@ class _InventarioScreenState extends State<InventarioScreen> with SingleTickerPr
             ),
             SizedBox(height: AppDimensions.marginMd),
             CustomTextField(
-              controller: viewModel.motivoController,
+              controller: viewModel.motivoStockTotalController,
               labelText: 'Motivo *',
               prefixIcon: Icons.description,
               validator: viewModel.validarMotivo,
@@ -636,7 +637,7 @@ class _InventarioScreenState extends State<InventarioScreen> with SingleTickerPr
           AppColors.success,
           [
             CustomTextField(
-              controller: viewModel.ajusteStockController,
+              controller: viewModel.agregarStockController,
               labelText: 'Cantidad a Agregar *',
               prefixIcon: Icons.add,
               keyboardType: TextInputType.number,
@@ -645,7 +646,7 @@ class _InventarioScreenState extends State<InventarioScreen> with SingleTickerPr
             ),
             SizedBox(height: AppDimensions.marginMd),
             CustomTextField(
-              controller: viewModel.motivoController,
+              controller: viewModel.motivoAgregarController,
               labelText: 'Motivo *',
               prefixIcon: Icons.description,
               validator: viewModel.validarMotivo,
@@ -684,7 +685,7 @@ class _InventarioScreenState extends State<InventarioScreen> with SingleTickerPr
             ),
             SizedBox(height: AppDimensions.marginMd),
             CustomTextField(
-              controller: viewModel.motivoController,
+              controller: viewModel.motivoAjusteController,
               labelText: 'Motivo *',
               prefixIcon: Icons.description,
               validator: viewModel.validarMotivo,
@@ -1014,9 +1015,11 @@ class _InventarioScreenState extends State<InventarioScreen> with SingleTickerPr
   }
 
   void _actualizarStockTotal(InventarioViewModel viewModel) async {
-    if (_formKey.currentState!.validate()) {
-      final stockTotal = int.tryParse(viewModel.stockInicialController.text);
-      final motivo = viewModel.motivoController.text.trim();
+    // Validar solo los campos de esta sección
+    if (viewModel.validarStockInicial(viewModel.stockTotalController.text) == null &&
+        viewModel.validarMotivo(viewModel.motivoStockTotalController.text) == null) {
+      final stockTotal = int.tryParse(viewModel.stockTotalController.text);
+      final motivo = viewModel.motivoStockTotalController.text.trim();
       
       if (stockTotal != null) {
         final success = await viewModel.actualizarStockTotal(stockTotal, motivo, widget.usuario);
@@ -1034,9 +1037,11 @@ class _InventarioScreenState extends State<InventarioScreen> with SingleTickerPr
   }
 
   void _agregarStock(InventarioViewModel viewModel) async {
-    if (_formKey.currentState!.validate()) {
-      final cantidad = int.tryParse(viewModel.ajusteStockController.text);
-      final motivo = viewModel.motivoController.text.trim();
+    // Validar solo los campos de esta sección
+    if (viewModel.validarStockInicial(viewModel.agregarStockController.text) == null &&
+        viewModel.validarMotivo(viewModel.motivoAgregarController.text) == null) {
+      final cantidad = int.tryParse(viewModel.agregarStockController.text);
+      final motivo = viewModel.motivoAgregarController.text.trim();
       
       if (cantidad != null) {
         final success = await viewModel.agregarStock(cantidad, motivo, widget.usuario);
@@ -1054,9 +1059,11 @@ class _InventarioScreenState extends State<InventarioScreen> with SingleTickerPr
   }
 
   void _ajustarStockDisponible(InventarioViewModel viewModel) async {
-    if (_formKey.currentState!.validate()) {
+    // Validar solo los campos de esta sección
+    if (viewModel.validarAjuste(viewModel.ajusteStockController.text) == null &&
+        viewModel.validarMotivo(viewModel.motivoAjusteController.text) == null) {
       final ajuste = int.tryParse(viewModel.ajusteStockController.text);
-      final motivo = viewModel.motivoController.text.trim();
+      final motivo = viewModel.motivoAjusteController.text.trim();
       
       if (ajuste != null) {
         final success = await viewModel.ajustarStockDisponible(ajuste, motivo);
