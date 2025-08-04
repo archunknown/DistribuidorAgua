@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
 import '../models/user_model.dart';
@@ -481,7 +482,20 @@ class _ClientesScreenState extends State<ClientesScreen> with SingleTickerProvid
           labelText: 'Teléfono (opcional)',
           prefixIcon: Icons.phone,
           keyboardType: TextInputType.phone,
+          maxLength: 9,
+          validator: (value) {
+            if (value != null && value.isNotEmpty) {
+              if (value.length != 9) {
+                return 'El teléfono debe tener exactamente 9 dígitos';
+              }
+              if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
+                return 'Solo se permiten números';
+              }
+            }
+            return null;
+          },
           onChanged: (_) => viewModel.clearMessages(),
+          hintText: 'Ej: 987654321',
         ),
       ],
     );
@@ -728,7 +742,7 @@ class _ClientesScreenState extends State<ClientesScreen> with SingleTickerProvid
         SizedBox(height: AppDimensions.marginMd),
         _buildInfoRow(Icons.location_on, 'Dirección', cliente.direccionCompleta),
         if (cliente.telefono != null)
-          _buildInfoRow(Icons.phone, 'Teléfono', cliente.telefono!),
+          _buildTelefonoRow(cliente.telefono!),
       ],
     );
   }
@@ -765,6 +779,109 @@ class _ClientesScreenState extends State<ClientesScreen> with SingleTickerProvid
         ],
       ),
     );
+  }
+
+  Widget _buildTelefonoRow(String telefono) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: AppDimensions.marginMd),
+      child: Row(
+        children: [
+          Icon(Icons.phone, color: AppColors.mediumBlue, size: AppDimensions.iconMd),
+          SizedBox(width: AppDimensions.marginMd),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Teléfono',
+                  style: TextStyle(
+                    fontSize: AppDimensions.textSm,
+                    color: AppColors.darkBrown.withOpacity(0.6),
+                  ),
+                ),
+                Row(
+                  children: [
+                    Text(
+                      telefono,
+                      style: TextStyle(
+                        fontSize: AppDimensions.textMd,
+                        color: AppColors.darkBrown,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    SizedBox(width: AppDimensions.marginMd),
+                    InkWell(
+                      onTap: () => _abrirWhatsApp(telefono),
+                      borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: AppDimensions.paddingSm,
+                          vertical: AppDimensions.paddingXs,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF25D366), // Color oficial de WhatsApp
+                          borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.chat,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                            SizedBox(width: AppDimensions.marginXs),
+                            Text(
+                              'WhatsApp',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: AppDimensions.textSm,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _abrirWhatsApp(String telefono) async {
+    // Agregar código de país 51 para Perú
+    final numeroCompleto = '51$telefono';
+    final url = 'https://wa.me/$numeroCompleto';
+    
+    try {
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('No se pudo abrir WhatsApp. Número: +$numeroCompleto'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al abrir WhatsApp: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildEstadisticasCliente(ClientesViewModel viewModel) {
