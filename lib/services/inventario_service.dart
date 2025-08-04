@@ -13,7 +13,7 @@ class InventarioService {
   factory InventarioService() => _instance;
   InventarioService._internal();
 
-  // Obtener inventario actual
+  // Obtener inventario actual con cálculo correcto de préstamos
   Future<InventarioModel?> obtenerInventario() async {
     try {
       final doc = await _firestore
@@ -21,15 +21,77 @@ class InventarioService {
           .doc(_bidonesDoc)
           .get();
 
+      InventarioModel? inventarioBase;
       if (doc.exists && doc.data() != null) {
-        return InventarioModel.fromFirestore(doc.data()!, doc.id);
+        inventarioBase = InventarioModel.fromFirestore(doc.data()!, doc.id);
+      } else {
+        // Si no existe, crear inventario inicial
+        inventarioBase = await _crearInventarioInicial();
       }
+
+      if (inventarioBase == null) return null;
+
+      // Calcular bidones prestados y vendidos correctamente
+      final estadisticasVentas = await _calcularEstadisticasVentas();
       
-      // Si no existe, crear inventario inicial
-      return await _crearInventarioInicial();
+      return InventarioModel(
+        id: inventarioBase.id,
+        stockTotal: inventarioBase.stockTotal,
+        stockDisponible: inventarioBase.stockDisponible,
+        fechaActualizacion: inventarioBase.fechaActualizacion,
+        bidonesVendidos: estadisticasVentas['vendidos'],
+        bidonesPrestados: estadisticasVentas['prestados'],
+      );
     } catch (e) {
       debugPrint('Error obteniendo inventario: $e');
       return null;
+    }
+  }
+
+  // Calcular estadísticas reales de ventas
+  Future<Map<String, int>> _calcularEstadisticasVentas() async {
+    try {
+      // Obtener todas las ventas para calcular correctamente
+      final ventasSnapshot = await _firestore
+          .collection('ventas')
+          .get();
+
+      int bidonesVendidos = 0; // Garrafón nuevo (cliente compra el bidón)
+      int bidonesPrestados = 0; // Préstamo + agua (cliente recibe bidón prestado)
+
+      for (final doc in ventasSnapshot.docs) {
+        final data = doc.data();
+        final tipo = data['tp']?.toString() ?? '';
+        final cantidad = (data['cant'] ?? 0) as int;
+
+        switch (tipo) {
+          case 'nueva':
+            // Garrafón nuevo: el cliente COMPRA el bidón (no es préstamo)
+            bidonesVendidos += cantidad;
+            break;
+          case 'prestamo':
+            // Préstamo + agua: el cliente recibe el bidón PRESTADO
+            bidonesPrestados += cantidad;
+            break;
+          case 'recarga':
+            // Recarga: no afecta el stock de bidones (cliente ya tiene uno)
+            break;
+        }
+      }
+
+      debugPrint('📊 INVENTARIO DEBUG - Bidones vendidos: $bidonesVendidos');
+      debugPrint('📊 INVENTARIO DEBUG - Bidones prestados: $bidonesPrestados');
+
+      return {
+        'vendidos': bidonesVendidos,
+        'prestados': bidonesPrestados,
+      };
+    } catch (e) {
+      debugPrint('❌ INVENTARIO ERROR - Error calculando estadísticas: $e');
+      return {
+        'vendidos': 0,
+        'prestados': 0,
+      };
     }
   }
 

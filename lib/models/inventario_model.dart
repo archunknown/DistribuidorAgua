@@ -5,12 +5,16 @@ class InventarioModel {
   final int stockTotal;
   final int stockDisponible;
   final DateTime fechaActualizacion;
+  final int? bidonesVendidos; // Bidones vendidos (garrafón nuevo)
+  final int? bidonesPrestados; // Bidones prestados (préstamo + agua)
 
   InventarioModel({
     required this.id,
     required this.stockTotal,
     required this.stockDisponible,
     required this.fechaActualizacion,
+    this.bidonesVendidos,
+    this.bidonesPrestados,
   });
 
   // Constructor para crear desde Firestore
