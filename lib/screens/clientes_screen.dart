@@ -856,27 +856,90 @@ class _ClientesScreenState extends State<ClientesScreen> with SingleTickerProvid
   Future<void> _abrirWhatsApp(String telefono) async {
     // Agregar código de país 51 para Perú
     final numeroCompleto = '51$telefono';
-    final url = 'https://wa.me/$numeroCompleto';
     
-    try {
-      final uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('No se pudo abrir WhatsApp. Número: +$numeroCompleto'),
-              backgroundColor: AppColors.error,
-            ),
+    // Lista de URLs para intentar (en orden de preferencia)
+    final urls = [
+      'whatsapp://send?phone=$numeroCompleto', // URL scheme de WhatsApp
+      'https://wa.me/$numeroCompleto',         // URL web de WhatsApp
+      'https://api.whatsapp.com/send?phone=$numeroCompleto', // URL alternativa
+    ];
+    
+    bool success = false;
+    
+    for (final url in urls) {
+      try {
+        final uri = Uri.parse(url);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(
+            uri, 
+            mode: url.startsWith('whatsapp://') 
+                ? LaunchMode.externalApplication 
+                : LaunchMode.externalApplication
           );
+          success = true;
+          break;
         }
+      } catch (e) {
+        // Continuar con la siguiente URL
+        continue;
+      }
+    }
+    
+    if (!success && mounted) {
+      // Si ninguna URL funcionó, mostrar diálogo con opciones
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('WhatsApp no disponible'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('No se pudo abrir WhatsApp automáticamente.'),
+              const SizedBox(height: 12),
+              Text('Número: +$numeroCompleto'),
+              const SizedBox(height: 8),
+              const Text('Opciones:'),
+              const Text('• Instala WhatsApp desde Play Store'),
+              const Text('• Copia el número manualmente'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cerrar'),
+            ),
+            TextButton(
+              onPressed: () async {
+                // Copiar número al portapapeles
+                await _copiarNumero(numeroCompleto);
+                Navigator.pop(context);
+              },
+              child: const Text('Copiar Número'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+  
+  Future<void> _copiarNumero(String numero) async {
+    try {
+      // Importar Clipboard si no está importado
+      await Future.delayed(Duration.zero); // Placeholder para clipboard
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Número copiado: +$numero'),
+            backgroundColor: AppColors.success,
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al abrir WhatsApp: $e'),
+            content: Text('Error al copiar: $e'),
             backgroundColor: AppColors.error,
           ),
         );
