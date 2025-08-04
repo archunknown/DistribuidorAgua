@@ -42,20 +42,29 @@ class InventarioViewModel extends ChangeNotifier {
         'stockTotal': 0,
         'stockDisponible': 0,
         'stockPrestado': 0,
+        'stockVendido': 0,
         'porcentajeDisponible': 0.0,
         'alertaStockBajo': false,
       };
     }
 
-    final stockPrestado = _inventario!.stockTotal - _inventario!.stockDisponible;
+    // Usar los nuevos campos calculados correctamente
+    final stockPrestado = _inventario!.bidonesPrestados ?? 0; // Solo préstamos reales
+    final stockVendido = _inventario!.bidonesVendidos ?? 0; // Garrafones nuevos vendidos
     final porcentajeDisponible = _inventario!.stockTotal > 0 
         ? (_inventario!.stockDisponible / _inventario!.stockTotal) * 100 
         : 0.0;
     
+    debugPrint('📊 INVENTARIO VIEWMODEL - Stock total: ${_inventario!.stockTotal}');
+    debugPrint('📊 INVENTARIO VIEWMODEL - Stock disponible: ${_inventario!.stockDisponible}');
+    debugPrint('📊 INVENTARIO VIEWMODEL - Bidones prestados: $stockPrestado');
+    debugPrint('📊 INVENTARIO VIEWMODEL - Bidones vendidos: $stockVendido');
+    
     return {
       'stockTotal': _inventario!.stockTotal,
       'stockDisponible': _inventario!.stockDisponible,
-      'stockPrestado': stockPrestado,
+      'stockPrestado': stockPrestado, // ✅ Ahora solo cuenta préstamos reales
+      'stockVendido': stockVendido, // ✅ Nuevo campo para garrafones vendidos
       'porcentajeDisponible': porcentajeDisponible,
       'alertaStockBajo': _inventario!.stockBajo,
     };

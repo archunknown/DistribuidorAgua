@@ -84,6 +84,8 @@ class VentaService {
       final inicioDia = DateTime(fechaConsulta.year, fechaConsulta.month, fechaConsulta.day);
       final finDia = inicioDia.add(const Duration(days: 1));
 
+      debugPrint('🔍 VENTA DEBUG - Obteniendo ventas del día: ${fechaConsulta.day}/${fechaConsulta.month}/${fechaConsulta.year}');
+
       final querySnapshot = await _firestore
           .collection(_ventasCollection)
           .where('fh', isGreaterThanOrEqualTo: Timestamp.fromDate(inicioDia))
@@ -91,12 +93,47 @@ class VentaService {
           .orderBy('fh', descending: true)
           .get();
 
-      return querySnapshot.docs
-          .map((doc) => VentaModel.fromFirestore(doc.data(), doc.id))
-          .toList();
+      debugPrint('🔍 VENTA DEBUG - Documentos encontrados: ${querySnapshot.docs.length}');
+
+      final ventas = <VentaModel>[];
+      for (final doc in querySnapshot.docs) {
+        try {
+          final data = doc.data();
+          debugPrint('🔍 VENTA DEBUG - Procesando venta ${doc.id}:');
+          debugPrint('🔍 VENTA DEBUG - Tipo en Firestore: ${data['tp']} (${data['tp'].runtimeType})');
+          debugPrint('🔍 VENTA DEBUG - Precio unitario: ${data['pUnit']}');
+          debugPrint('🔍 VENTA DEBUG - Cantidad: ${data['cant']}');
+          debugPrint('🔍 VENTA DEBUG - Total: ${data['tot']}');
+          
+          final venta = VentaModel.fromFirestore(data, doc.id);
+          
+          debugPrint('🔍 VENTA DEBUG - Tipo después de conversión: ${venta.tipo.name} (${venta.tipo.displayName})');
+          debugPrint('🔍 VENTA DEBUG - ¿Coincide el precio con el tipo?');
+          debugPrint('🔍 VENTA DEBUG - Precio esperado para ${venta.tipo.name}: ${_obtenerPrecioEsperado(venta.tipo)}');
+          debugPrint('🔍 VENTA DEBUG - Precio real: ${venta.precioUnitario}');
+          
+          ventas.add(venta);
+        } catch (e) {
+          debugPrint('❌ VENTA ERROR - Error procesando venta ${doc.id}: $e');
+        }
+      }
+
+      debugPrint('🔍 VENTA DEBUG - Total ventas procesadas: ${ventas.length}');
+      return ventas;
     } catch (e) {
-      debugPrint('Error obteniendo ventas del día: $e');
+      debugPrint('❌ VENTA ERROR - Error obteniendo ventas del día: $e');
       return [];
+    }
+  }
+
+  // Método auxiliar para obtener precio esperado según tipo
+  double _obtenerPrecioEsperado(TipoVenta tipo) {
+    switch (tipo) {
+      case TipoVenta.nueva:
+        return 25.0;
+      case TipoVenta.recarga:
+      case TipoVenta.prestamo:
+        return 10.0;
     }
   }
 
