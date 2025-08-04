@@ -27,14 +27,25 @@ class VentaService {
     try {
       final total = precioUnitario * cantidad;
       
-      // Si es venta nueva, verificar y reducir stock
-      if (tipo == TipoVenta.nueva || tipo == TipoVenta.prestamo) {
-        final stockReducido = await _inventarioService.reducirStock(cantidad);
+      // Reducir stock según el tipo de venta
+      if (tipo == TipoVenta.nueva) {
+        // Garrafón nuevo: reducir stock total y disponible (bidón se vende)
+        final stockReducido = await _inventarioService.reducirStockTotal(cantidad);
         if (!stockReducido) {
-          debugPrint('No hay suficiente stock disponible');
+          debugPrint('No hay suficiente stock disponible para venta de garrafón nuevo');
           return null;
         }
+        debugPrint('🔥 VENTA NUEVA - Stock total y disponible reducidos correctamente');
+      } else if (tipo == TipoVenta.prestamo) {
+        // Préstamo: solo reducir stock disponible (bidón se presta)
+        final stockReducido = await _inventarioService.reducirStock(cantidad);
+        if (!stockReducido) {
+          debugPrint('No hay suficiente stock disponible para préstamo');
+          return null;
+        }
+        debugPrint('🤝 PRÉSTAMO - Solo stock disponible reducido (bidón prestado)');
       }
+      // Recarga: no afecta stock de bidones
 
       final ventaData = {
         'fh': FieldValue.serverTimestamp(),

@@ -144,7 +144,7 @@ class InventarioService {
     }
   }
 
-  // Reducir stock disponible (cuando se hace una venta nueva)
+  // Reducir stock disponible (cuando se hace una venta nueva o préstamo)
   Future<bool> reducirStock(int cantidad) async {
     try {
       final inventarioActual = await obtenerInventario();
@@ -167,6 +167,40 @@ class InventarioService {
       return true;
     } catch (e) {
       debugPrint('Error reduciendo stock: $e');
+      return false;
+    }
+  }
+
+  // Reducir stock total y disponible (cuando se vende un garrafón nuevo)
+  Future<bool> reducirStockTotal(int cantidad) async {
+    try {
+      final inventarioActual = await obtenerInventario();
+      if (inventarioActual == null) return false;
+
+      // Verificar si hay suficiente stock
+      if (inventarioActual.stockDisponible < cantidad) {
+        debugPrint('Stock insuficiente. Disponible: ${inventarioActual.stockDisponible}, Solicitado: $cantidad');
+        return false;
+      }
+
+      // Para venta de garrafón nuevo: reducir TANTO stock total como disponible
+      final nuevoInventario = inventarioActual.copyWith(
+        stockTotal: inventarioActual.stockTotal - cantidad,
+        stockDisponible: inventarioActual.stockDisponible - cantidad,
+        fechaActualizacion: DateTime.now(),
+      );
+
+      await _firestore
+          .collection(_inventarioCollection)
+          .doc(_bidonesDoc)
+          .update(nuevoInventario.toFirestore());
+
+      debugPrint('🔥 VENTA GARRAFÓN NUEVO - Stock total y disponible reducidos: $cantidad bidones');
+      debugPrint('🔥 VENTA GARRAFÓN NUEVO - Nuevo stock total: ${nuevoInventario.stockTotal}');
+      debugPrint('🔥 VENTA GARRAFÓN NUEVO - Nuevo stock disponible: ${nuevoInventario.stockDisponible}');
+      return true;
+    } catch (e) {
+      debugPrint('Error reduciendo stock total: $e');
       return false;
     }
   }
