@@ -372,6 +372,54 @@ class ClientesViewModel extends ChangeNotifier {
     }
   }
 
+  // Limpiar datos huérfanos (solo para administradores)
+  Future<Map<String, dynamic>> limpiarDatosHuerfanos() async {
+    _setLoading(true);
+    try {
+      final resultado = await _clienteService.limpiarDatosHuerfanos();
+      
+      if (resultado['error'] != null) {
+        _setError(resultado['error']);
+      } else {
+        _setSuccess(resultado['mensaje']);
+        await cargarClientes(); // Recargar datos después de la limpieza
+      }
+      
+      return resultado;
+    } catch (e) {
+      _setError('Error durante la limpieza: $e');
+      return {'error': 'Error durante la limpieza: $e'};
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Verificar integridad de datos
+  Future<Map<String, dynamic>> verificarIntegridadDatos() async {
+    _setLoading(true);
+    try {
+      final resultado = await _clienteService.verificarIntegridadDatos();
+      
+      if (resultado['error'] != null) {
+        _setError(resultado['error']);
+      } else {
+        final ventasHuerfanas = resultado['ventasHuerfanas'] as int;
+        if (ventasHuerfanas > 0) {
+          _setError('Se encontraron $ventasHuerfanas ventas huérfanas. Se recomienda ejecutar limpieza de datos.');
+        } else {
+          _setSuccess('Integridad de datos verificada: ${resultado['integridad']}');
+        }
+      }
+      
+      return resultado;
+    } catch (e) {
+      _setError('Error verificando integridad: $e');
+      return {'error': 'Error verificando integridad: $e'};
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   // Métodos de utilidad
   void _setLoading(bool loading) {
     _isLoading = loading;

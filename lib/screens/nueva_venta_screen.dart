@@ -9,6 +9,7 @@ import '../models/cliente_model.dart';
 import '../viewmodels/nueva_venta_viewmodel.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_text_field.dart';
+import '../widgets/autocomplete_text_field.dart';
 import '../widgets/loading_overlay.dart';
 
 class NuevaVentaScreen extends StatefulWidget {
@@ -172,57 +173,101 @@ class _NuevaVentaScreenState extends State<NuevaVentaScreen> {
         ),
         SizedBox(height: AppDimensions.marginMd),
         
-        // Campo de búsqueda de cliente
-        CustomTextField(
+        // Campo de autocompletado optimizado
+        AutocompleteTextField(
           controller: viewModel.clienteController,
-          labelText: 'Buscar cliente',
+          labelText: 'Buscar cliente por nombre, distrito o teléfono',
           prefixIcon: Icons.person_search,
-          onChanged: (value) => viewModel.buscarClientes(value),
-          suffixIcon: viewModel.clienteSeleccionado != null
-              ? Icon(Icons.check_circle, color: AppColors.success)
-              : IconButton(
-                  icon: const Icon(Icons.add),
-                  onPressed: () => _mostrarDialogoNuevoCliente(viewModel),
-                ),
+          suggestions: viewModel.clientesSugeridos,
+          onChanged: viewModel.buscarClientes,
+          onSuggestionSelected: viewModel.seleccionarCliente,
+          onAddPressed: () => _mostrarDialogoNuevoCliente(viewModel),
+          selectedClient: viewModel.clienteSeleccionado,
+          isLoading: viewModel.isBuscandoClientes,
         ),
         
-        // Lista de sugerencias
-        if (viewModel.clientesSugeridos.isNotEmpty)
+        // Información del cliente seleccionado
+        if (viewModel.clienteSeleccionado != null)
           Container(
-            margin: EdgeInsets.only(top: AppDimensions.marginSm),
+            margin: EdgeInsets.only(top: AppDimensions.marginMd),
+            padding: EdgeInsets.all(AppDimensions.paddingMd),
             decoration: BoxDecoration(
-              color: AppColors.white,
+              color: AppColors.success.withOpacity(0.05),
               borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.blackWithOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              border: Border.all(color: AppColors.success.withOpacity(0.2)),
             ),
-            child: ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: viewModel.clientesSugeridos.length,
-              itemBuilder: (context, index) {
-                final cliente = viewModel.clientesSugeridos[index];
-                return ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: AppColors.lightBlue,
-                    child: Text(
-                      cliente.iniciales,
-                      style: TextStyle(
-                        color: AppColors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: AppColors.success,
+                  radius: 20.r,
+                  child: Text(
+                    viewModel.clienteSeleccionado!.iniciales,
+                    style: TextStyle(
+                      color: AppColors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: AppDimensions.textSm,
                     ),
                   ),
-                  title: Text(cliente.nombreCompleto),
-                  subtitle: Text(cliente.direccionCompleta),
-                  onTap: () => viewModel.seleccionarCliente(cliente),
-                );
-              },
+                ),
+                SizedBox(width: AppDimensions.marginMd),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        viewModel.clienteSeleccionado!.nombreCompleto,
+                        style: TextStyle(
+                          fontSize: AppDimensions.textMd,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.darkBrown,
+                        ),
+                      ),
+                      SizedBox(height: 2.h),
+                      Text(
+                        '${viewModel.clienteSeleccionado!.distrito} • ${viewModel.clienteSeleccionado!.referencia}',
+                        style: TextStyle(
+                          fontSize: AppDimensions.textSm,
+                          color: AppColors.darkBrown.withOpacity(0.7),
+                        ),
+                      ),
+                      if (viewModel.clienteSeleccionado!.telefono != null) ...[
+                        SizedBox(height: 2.h),
+                        Text(
+                          viewModel.clienteSeleccionado!.telefono!,
+                          style: TextStyle(
+                            fontSize: AppDimensions.textSm,
+                            color: AppColors.mediumBlue,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(
+                    Icons.clear,
+                    color: AppColors.error,
+                    size: AppDimensions.iconSm,
+                  ),
+                  onPressed: () {
+                    viewModel.clienteController.clear();
+                    // Limpiar la selección de cliente
+                    viewModel.seleccionarCliente(ClienteModel(
+                      id: '',
+                      nombre: '',
+                      apellidoPaterno: '',
+                      apellidoMaterno: '',
+                      distrito: '',
+                      referencia: '',
+                      creadoPorId: '',
+                      fechaCreacion: DateTime.now(),
+                    ));
+                  },
+                  tooltip: 'Limpiar selección',
+                ),
+              ],
             ),
           ),
       ],
