@@ -30,7 +30,7 @@ class ClienteService {
         'distrito': distrito.trim(),
         'referencia': referencia.trim(),
         'tel': telefono?.trim(),
-        'crePor': usuarioActual.id,
+        'crePor': _firestore.collection('usuarios').doc(usuarioActual.id),
         'fhCre': FieldValue.serverTimestamp(),
       };
 

@@ -771,7 +771,14 @@ class _ReportesScreenState extends State<ReportesScreen> with SingleTickerProvid
   Widget _buildSimpleBarChart(List<Map<String, dynamic>> datos, {bool useIngresos = false}) {
     if (datos.isEmpty) return const SizedBox.shrink();
 
-    final maxValue = datos.map((d) => useIngresos ? d['ingresos'] as double : (d['ventas'] as int).toDouble()).reduce((a, b) => a > b ? a : b);
+    // Manejo seguro de valores null
+    final maxValue = datos.map((d) {
+      if (useIngresos) {
+        return (d['ingresos'] ?? 0.0) as double;
+      } else {
+        return ((d['ventas'] ?? 0) as int).toDouble();
+      }
+    }).reduce((a, b) => a > b ? a : b);
     
     return Column(
       children: [
@@ -779,8 +786,12 @@ class _ReportesScreenState extends State<ReportesScreen> with SingleTickerProvid
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: datos.map((dato) {
-              final value = useIngresos ? dato['ingresos'] as double : (dato['ventas'] as int).toDouble();
+              // Manejo seguro de valores null
+              final value = useIngresos 
+                  ? (dato['ingresos'] ?? 0.0) as double 
+                  : ((dato['ventas'] ?? 0) as int).toDouble();
               final height = maxValue > 0 ? (value / maxValue) * 150.h : 0.0;
+              final periodo = (dato['periodo'] ?? 'N/A').toString();
               
               return Expanded(
                 child: Padding(
@@ -799,7 +810,7 @@ class _ReportesScreenState extends State<ReportesScreen> with SingleTickerProvid
                       ),
                       SizedBox(height: AppDimensions.marginXs),
                       Text(
-                        dato['periodo'],
+                        periodo,
                         style: TextStyle(
                           fontSize: AppDimensions.textXs,
                           color: AppColors.darkBrown.withOpacity(0.6),

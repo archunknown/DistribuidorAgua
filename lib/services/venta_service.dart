@@ -150,18 +150,40 @@ class VentaService {
   // Obtener ventas por cliente
   Future<List<VentaModel>> obtenerVentasPorCliente(String clienteId) async {
     try {
+      debugPrint('🔍 VENTA DEBUG - Obteniendo ventas para cliente: $clienteId');
+      
       final clienteRef = _firestore.collection('clientes').doc(clienteId);
+      debugPrint('🔍 VENTA DEBUG - Cliente ref: $clienteRef');
+      
       final querySnapshot = await _firestore
           .collection(_ventasCollection)
           .where('cliRef', isEqualTo: clienteRef)
           .orderBy('fh', descending: true)
           .get();
 
-      return querySnapshot.docs
-          .map((doc) => VentaModel.fromFirestore(doc.data(), doc.id))
-          .toList();
+      debugPrint('🔍 VENTA DEBUG - Documentos encontrados: ${querySnapshot.docs.length}');
+
+      final ventas = <VentaModel>[];
+      for (final doc in querySnapshot.docs) {
+        try {
+          debugPrint('🔍 VENTA DEBUG - Procesando venta: ${doc.id}');
+          debugPrint('🔍 VENTA DEBUG - Data: ${doc.data()}');
+          
+          final venta = VentaModel.fromFirestore(doc.data(), doc.id);
+          ventas.add(venta);
+          
+          debugPrint('🔍 VENTA DEBUG - Venta procesada exitosamente: ${venta.id}');
+        } catch (e) {
+          debugPrint('❌ VENTA ERROR - Error procesando venta ${doc.id}: $e');
+          debugPrint('❌ VENTA ERROR - Data problemática: ${doc.data()}');
+        }
+      }
+
+      debugPrint('🔍 VENTA DEBUG - Total ventas procesadas: ${ventas.length}');
+      return ventas;
     } catch (e) {
-      debugPrint('Error obteniendo ventas por cliente: $e');
+      debugPrint('❌ VENTA ERROR - Error obteniendo ventas por cliente: $e');
+      debugPrint('❌ VENTA ERROR - Cliente ID: $clienteId');
       return [];
     }
   }

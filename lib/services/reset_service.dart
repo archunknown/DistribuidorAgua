@@ -92,7 +92,31 @@ class ResetService {
   // Crear datos de prueba (opcional)
   Future<bool> crearDatosDePrueba() async {
     try {
-      // Crear algunos clientes de prueba
+      debugPrint('🔧 RESET DEBUG - Creando datos de prueba con referencias correctas');
+      
+      // Primero verificar si existe un usuario admin
+      final usuariosSnapshot = await _firestore.collection('usuarios').where('rol', isEqualTo: 'admin').limit(1).get();
+      DocumentReference adminRef;
+      
+      if (usuariosSnapshot.docs.isNotEmpty) {
+        adminRef = usuariosSnapshot.docs.first.reference;
+        debugPrint('🔧 RESET DEBUG - Usuario admin encontrado: ${adminRef.id}');
+      } else {
+        // Crear usuario admin si no existe
+        final adminDoc = await _firestore.collection('usuarios').add({
+          'usuario': 'admin',
+          'pass': 'admin123', // En producción debería estar hasheado
+          'nom': 'Administrador',
+          'apePat': 'Sistema',
+          'apeMat': '',
+          'rol': 'admin',
+          'fhCre': FieldValue.serverTimestamp(),
+        });
+        adminRef = adminDoc;
+        debugPrint('🔧 RESET DEBUG - Usuario admin creado: ${adminRef.id}');
+      }
+      
+      // Crear algunos clientes de prueba con referencias DocumentReference correctas
       final clientesPrueba = [
         {
           'nom': 'Juan',
@@ -101,7 +125,7 @@ class ResetService {
           'distrito': 'San Isidro',
           'referencia': 'Av. Principal 123',
           'tel': '987654321',
-          'crePor': 'admin',
+          'crePor': adminRef, // Usar DocumentReference
           'fhCre': FieldValue.serverTimestamp(),
         },
         {
@@ -111,7 +135,7 @@ class ResetService {
           'distrito': 'Miraflores',
           'referencia': 'Jr. Las Flores 456',
           'tel': '912345678',
-          'crePor': 'admin',
+          'crePor': adminRef, // Usar DocumentReference
           'fhCre': FieldValue.serverTimestamp(),
         },
         {
@@ -121,19 +145,20 @@ class ResetService {
           'distrito': 'Surco',
           'referencia': 'Calle Los Pinos 789',
           'tel': null,
-          'crePor': 'admin',
+          'crePor': adminRef, // Usar DocumentReference
           'fhCre': FieldValue.serverTimestamp(),
         },
       ];
 
       for (final clienteData in clientesPrueba) {
+        debugPrint('🔧 RESET DEBUG - Creando cliente: ${clienteData['nom']}');
         await _firestore.collection('clientes').add(clienteData);
       }
 
-      debugPrint('Datos de prueba creados exitosamente');
+      debugPrint('🔧 RESET DEBUG - Datos de prueba creados exitosamente');
       return true;
     } catch (e) {
-      debugPrint('Error creando datos de prueba: $e');
+      debugPrint('❌ RESET ERROR - Error creando datos de prueba: $e');
       return false;
     }
   }
