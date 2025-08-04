@@ -104,7 +104,11 @@ class ClientesViewModel extends ChangeNotifier {
 
   // Calcular estadísticas del cliente
   void _calcularEstadisticasCliente() {
+    debugPrint('🔍 CLIENTE STATS DEBUG - Calculando estadísticas del cliente');
+    debugPrint('🔍 CLIENTE STATS DEBUG - Ventas cliente count: ${_ventasCliente.length}');
+    
     if (_ventasCliente.isEmpty) {
+      debugPrint('🔍 CLIENTE STATS DEBUG - No hay ventas, estableciendo valores por defecto');
       _estadisticasCliente = {
         'totalVentas': 0,
         'montoTotal': 0.0,
@@ -119,16 +123,25 @@ class ClientesViewModel extends ChangeNotifier {
     final montoTotal = _ventasCliente.fold<double>(0, (sum, venta) => sum + venta.total);
     final ultimaCompra = _ventasCliente.first.fechaHora;
 
+    debugPrint('🔍 CLIENTE STATS DEBUG - Total ventas: $totalVentas');
+    debugPrint('🔍 CLIENTE STATS DEBUG - Monto total: $montoTotal');
+    debugPrint('🔍 CLIENTE STATS DEBUG - Última compra: $ultimaCompra');
+
     // Calcular tipo de venta preferido
     final tiposVenta = <TipoVenta, int>{};
     for (final venta in _ventasCliente) {
+      debugPrint('🔍 CLIENTE STATS DEBUG - Procesando venta: ${venta.id}, tipo: ${venta.tipo}, total: ${venta.total}');
       tiposVenta[venta.tipo] = (tiposVenta[venta.tipo] ?? 0) + 1;
     }
+    
+    debugPrint('🔍 CLIENTE STATS DEBUG - Tipos de venta: $tiposVenta');
     
     final tipoPreferido = tiposVenta.entries
         .reduce((a, b) => a.value > b.value ? a : b)
         .key
         .displayName;
+
+    debugPrint('🔍 CLIENTE STATS DEBUG - Tipo preferido: $tipoPreferido');
 
     // Calcular frecuencia de compras
     String frecuencia = 'Esporádico';
@@ -140,6 +153,8 @@ class ClientesViewModel extends ChangeNotifier {
       frecuencia = 'Regular';
     }
 
+    debugPrint('🔍 CLIENTE STATS DEBUG - Frecuencia: $frecuencia');
+
     _estadisticasCliente = {
       'totalVentas': totalVentas,
       'montoTotal': montoTotal,
@@ -147,6 +162,8 @@ class ClientesViewModel extends ChangeNotifier {
       'tipoPreferido': tipoPreferido,
       'frecuenciaCompras': frecuencia,
     };
+    
+    debugPrint('🔍 CLIENTE STATS DEBUG - Estadísticas finales: $_estadisticasCliente');
   }
 
   // Crear nuevo cliente

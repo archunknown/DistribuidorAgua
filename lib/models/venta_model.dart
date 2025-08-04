@@ -55,16 +55,35 @@ class VentaModel {
 
   // Constructor para crear desde Firestore
   factory VentaModel.fromFirestore(Map<String, dynamic> data, String id) {
+    // Manejo seguro de referencias de DocumentReference
+    String clienteId = '';
+    if (data['cliRef'] != null) {
+      if (data['cliRef'] is DocumentReference) {
+        clienteId = (data['cliRef'] as DocumentReference).id;
+      } else if (data['cliRef'] is String) {
+        clienteId = data['cliRef'] as String;
+      }
+    }
+    
+    String usuarioId = '';
+    if (data['usrRef'] != null) {
+      if (data['usrRef'] is DocumentReference) {
+        usuarioId = (data['usrRef'] as DocumentReference).id;
+      } else if (data['usrRef'] is String) {
+        usuarioId = data['usrRef'] as String;
+      }
+    }
+    
     return VentaModel(
       id: id,
       fechaHora: (data['fh'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      clienteId: data['cliRef'] ?? '',
-      tipo: TipoVenta.fromString(data['tp'] ?? 'recarga'),
-      cantidad: (data['cant'] ?? 1).toInt(),
+      clienteId: clienteId,
+      tipo: TipoVenta.fromString(data['tp']?.toString() ?? 'recarga'),
+      cantidad: (data['cant'] ?? 1) as int,
       precioUnitario: (data['pUnit'] ?? 0.0).toDouble(),
       costoBidon: (data['costBid'] ?? 0.0).toDouble(),
       total: (data['tot'] ?? 0.0).toDouble(),
-      usuarioId: data['usrRef'] ?? '',
+      usuarioId: usuarioId,
     );
   }
 

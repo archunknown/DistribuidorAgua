@@ -25,15 +25,25 @@ class ClienteModel {
 
   // Constructor para crear desde Firestore
   factory ClienteModel.fromFirestore(Map<String, dynamic> data, String id) {
+    // Manejo seguro de la referencia crePor
+    String creadoPorId = '';
+    if (data['crePor'] != null) {
+      if (data['crePor'] is DocumentReference) {
+        creadoPorId = (data['crePor'] as DocumentReference).id;
+      } else if (data['crePor'] is String) {
+        creadoPorId = data['crePor'] as String;
+      }
+    }
+    
     return ClienteModel(
       id: id,
-      nombre: data['nom'] ?? '',
-      apellidoPaterno: data['apePat'] ?? '',
-      apellidoMaterno: data['apeMat'] ?? '',
-      distrito: data['distrito'] ?? '',
-      referencia: data['referencia'] ?? '',
-      telefono: data['tel'],
-      creadoPorId: data['crePor'] ?? '',
+      nombre: data['nom']?.toString() ?? '',
+      apellidoPaterno: data['apePat']?.toString() ?? '',
+      apellidoMaterno: data['apeMat']?.toString() ?? '',
+      distrito: data['distrito']?.toString() ?? '',
+      referencia: data['referencia']?.toString() ?? '',
+      telefono: data['tel']?.toString(),
+      creadoPorId: creadoPorId,
       fechaCreacion: (data['fhCre'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }

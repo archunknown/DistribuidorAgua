@@ -93,16 +93,20 @@ class VentaReporte {
   }
 
   factory VentaReporte.fromFirestore(Map<String, dynamic> data, String id) {
+    final total = (data['tot'] ?? 0).toDouble();
+    final costoBidon = (data['costBid'] ?? 0).toDouble();
+    final cantidad = (data['cant'] ?? 0) as int;
+    
     return VentaReporte(
       id: id,
-      fecha: (data['fh'] as Timestamp).toDate(),
-      clienteNombre: data['clienteNombre'] ?? 'Cliente no encontrado',
-      tipo: data['tp'] ?? '',
-      cantidad: data['cant'] ?? 0,
+      fecha: data['fh'] != null ? (data['fh'] as Timestamp).toDate() : DateTime.now(),
+      clienteNombre: data['clienteNombre']?.toString() ?? 'Cliente no encontrado',
+      tipo: data['tp']?.toString() ?? '',
+      cantidad: cantidad,
       precioUnitario: (data['pUnit'] ?? 0).toDouble(),
-      costoUnitario: (data['costBid'] ?? 0).toDouble(),
-      total: (data['tot'] ?? 0).toDouble(),
-      ganancia: ((data['tot'] ?? 0) - ((data['costBid'] ?? 0) * (data['cant'] ?? 0))).toDouble(),
+      costoUnitario: costoBidon,
+      total: total,
+      ganancia: total - (costoBidon * cantidad),
     );
   }
 }

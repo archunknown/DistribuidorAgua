@@ -44,40 +44,55 @@ class ReporteService {
       for (final doc in ventasSnapshot.docs) {
         final ventaData = doc.data() as Map<String, dynamic>;
         
-        // Obtener información del cliente
+        // Obtener información del cliente con logs detallados
         String clienteNombre = 'Cliente no encontrado';
         if (ventaData['cliRef'] != null) {
           try {
+            debugPrint('🔍 REPORTE DEBUG - Procesando venta ${doc.id}');
+            debugPrint('🔍 REPORTE DEBUG - cliRef type: ${ventaData['cliRef'].runtimeType}');
+            debugPrint('🔍 REPORTE DEBUG - cliRef value: ${ventaData['cliRef']}');
+            
             final clienteDoc = await (ventaData['cliRef'] as DocumentReference).get();
-            if (clienteDoc.exists) {
+            if (clienteDoc.exists && clienteDoc.data() != null) {
               final clienteData = clienteDoc.data() as Map<String, dynamic>;
+              debugPrint('🔍 REPORTE DEBUG - Cliente data: $clienteData');
+              
               final nombre = clienteData['nom']?.toString() ?? '';
               final apePat = clienteData['apePat']?.toString() ?? '';
               final apeMat = clienteData['apeMat']?.toString() ?? '';
               clienteNombre = '$nombre $apePat $apeMat'.trim();
+              
+              debugPrint('🔍 REPORTE DEBUG - Cliente nombre construido: $clienteNombre');
+              
               if (clienteNombre.isEmpty) {
                 clienteNombre = 'Cliente sin nombre';
               }
+            } else {
+              debugPrint('🔍 REPORTE DEBUG - Cliente no existe o sin data');
+              clienteNombre = 'Cliente eliminado';
             }
           } catch (e) {
-            debugPrint('Error obteniendo cliente: $e');
+            debugPrint('❌ REPORTE ERROR - Error obteniendo cliente: $e');
+            debugPrint('❌ REPORTE ERROR - Venta ID: ${doc.id}');
+            debugPrint('❌ REPORTE ERROR - cliRef: ${ventaData['cliRef']}');
+            debugPrint('❌ REPORTE ERROR - cliRef type: ${ventaData['cliRef'].runtimeType}');
             clienteNombre = 'Error al cargar cliente';
           }
         }
         
-        // Crear reporte de venta
-        final ventaReporte = VentaReporte(
-          id: doc.id,
-          fecha: (ventaData['fh'] as Timestamp).toDate(),
-          clienteNombre: clienteNombre,
-          tipo: ventaData['tp'] ?? '',
-          cantidad: ventaData['cant'] ?? 0,
-          precioUnitario: (ventaData['pUnit'] ?? 0).toDouble(),
-          costoUnitario: (ventaData['costBid'] ?? 0).toDouble(),
-          total: (ventaData['tot'] ?? 0).toDouble(),
-          ganancia: (ventaData['tot'] ?? 0).toDouble() - 
-                   ((ventaData['costBid'] ?? 0).toDouble() * (ventaData['cant'] ?? 0)),
-        );
+        // Crear reporte de venta con manejo seguro de null
+        final total = (ventaData['tot'] ?? 0).toDouble();
+        final costoBidon = (ventaData['costBid'] ?? 0).toDouble();
+        final cantidad = (ventaData['cant'] ?? 0) as int;
+        final fecha = ventaData['fh'] != null ? (ventaData['fh'] as Timestamp).toDate() : DateTime.now();
+        
+        // Crear una copia de los datos con el nombre del cliente
+        final ventaDataConCliente = Map<String, dynamic>.from(ventaData);
+        ventaDataConCliente['clienteNombre'] = clienteNombre;
+        
+        debugPrint('🔍 REPORTE DEBUG - Creando VentaReporte con clienteNombre: $clienteNombre');
+        
+        final ventaReporte = VentaReporte.fromFirestore(ventaDataConCliente, doc.id);
         
         ventasDetalle.add(ventaReporte);
         
